@@ -113,7 +113,6 @@ export type AuthorizedControlUiReadRequest = AuthenticatedHttpUserProfile &
 
 type ControlUiReadAuthParams = Omit<GatewayHttpRequestAuthParams, "auth"> & {
   auth?: ResolvedGatewayAuth;
-  allowQueryToken?: boolean;
   /** A public app shell can omit protected bootstrap data without rejecting navigation. */
   replyOnFailure?: boolean;
   requiredOperatorMethod?: string;
@@ -125,21 +124,6 @@ export function resolveHttpBrowserOriginPolicy(
   cfg = getRuntimeConfig(),
 ): NonNullable<Parameters<typeof authorizeHttpGatewayConnect>[0]["browserOriginPolicy"]> {
   return resolveBrowserOriginPolicy({ req, cfg });
-}
-
-function resolveControlUiReadAuthToken(
-  req: IncomingMessage,
-  allowQueryToken: boolean | undefined,
-): string | undefined {
-  const bearer = getBearerToken(req);
-  if (bearer || !allowQueryToken || !req.url) {
-    return bearer;
-  }
-  try {
-    return normalizeOptionalString(new URL(req.url, "http://localhost").searchParams.get("token"));
-  } catch {
-    return undefined;
-  }
 }
 
 async function verifyHttpOperatorDeviceToken(
@@ -329,7 +313,7 @@ export async function authorizeControlUiReadRequestOrReply(
       hasCurrentClientAuthority,
     );
   }
-  const token = resolveControlUiReadAuthToken(params.req, params.allowQueryToken);
+  const token = getBearerToken(params.req);
   const { authResult, authGeneration, deviceOperatorScopes } = await checkHttpOperatorCredentials(
     { ...params, cfg, auth, token, rateLimiter: token ? params.rateLimiter : undefined },
     authorizeControlUiReadHttpGatewayConnect,
@@ -444,7 +428,7 @@ type AuthorizedControlUiSessionOwnerReadRequest = AuthorizedControlUiReadRequest
  * profile has no visibility to evaluate and stays refused.
  */
 export async function authorizeControlUiSessionOwnerReadRequestOrReply(
-  params: Omit<ControlUiReadAuthParams, "allowQueryToken" | "requiredOperatorMethod">,
+  params: Omit<ControlUiReadAuthParams, "requiredOperatorMethod">,
 ): Promise<AuthorizedControlUiSessionOwnerReadRequest | null> {
   const requestAuth = await authorizeControlUiReadRequestOrReply({
     ...params,

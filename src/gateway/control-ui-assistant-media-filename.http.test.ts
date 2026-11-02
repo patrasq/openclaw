@@ -27,10 +27,7 @@ describe("inbound attachment download filenames", () => {
       undefined,
       "café 雪 🦞.txt",
     );
-    const params = new URLSearchParams({
-      source: `media://inbound/${saved.id}`,
-      token: "test-token",
-    });
+    const params = new URLSearchParams({ source: `media://inbound/${saved.id}` });
     if (hint !== undefined) {
       params.set("filename", hint);
     }
@@ -40,7 +37,7 @@ describe("inbound attachment download filenames", () => {
         {
           url: `/__openclaw__/assistant-media?${params}`,
           method: "GET",
-          headers: {},
+          headers: { authorization: "Bearer test-token" },
           headersDistinct: {},
           socket: { remoteAddress: "127.0.0.1" },
         } as IncomingMessage,

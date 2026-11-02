@@ -59,8 +59,9 @@ afterEach(() => {
 function startMediaRequest(filePath: string, mode: "meta" | "playback" = "meta") {
   const response = makeMockHttpResponse();
   const { res } = response;
-  res.req.url = `/__openclaw__/assistant-media?${mode}=1&source=${encodeURIComponent(filePath)}&token=test-token`;
+  res.req.url = `/__openclaw__/assistant-media?${mode}=1&source=${encodeURIComponent(filePath)}`;
   res.req.method = "GET";
+  res.req.headers.authorization = "Bearer test-token";
   Object.defineProperty(res.req.socket, "remoteAddress", { value: "127.0.0.1" });
   const handled = handleControlUiAssistantMediaRequest(res.req, res, {
     auth: { mode: "token", token: "test-token", allowTailscale: false },

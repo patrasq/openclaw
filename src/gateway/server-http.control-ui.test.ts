@@ -72,6 +72,7 @@ it.each([
       const mediaPath = `${base}/__openclaw__/assistant-media?${query}`;
       for (const [method, path] of [
         ["GET", mediaPath],
+        ["GET", `${mediaPath}&token=${AUTH_TOKEN.token}`],
         ["POST", `${mediaPath}&allow=1`],
       ] as const) {
         await check(path, 401, { method });

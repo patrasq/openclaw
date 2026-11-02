@@ -46,7 +46,6 @@ export async function handleUserBackgroundHttpRequest(
     res,
     ...options,
     requiredOperatorMethod: "users.background.get",
-    allowQueryToken: false,
   });
   if (!auth) {
     return true;

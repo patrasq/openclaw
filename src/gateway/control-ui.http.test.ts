@@ -217,8 +217,8 @@ function runAvatarRequest(params: RequestParams & AuthParams & { config: OpenCla
 
 function readMedia(
   source: string,
-  query = "token=test-token",
-  params: Omit<RequestParams, "url"> & AuthParams = {},
+  query = "",
+  params: Omit<RequestParams, "url"> & AuthParams = authenticated,
 ) {
   return runRequest(
     handleControlUiAssistantMediaRequest,
@@ -422,7 +422,7 @@ it.each([
   "preserves legacy local %s animation bytes for preview requests",
   async (extension, bytes, mimeType) => {
     const filePath = await createMediaFile("animation." + extension, bytes);
-    const response = await readMedia(filePath, "token=test-token&variant=thumbnail&width=480");
+    const response = await readMedia(filePath, "variant=thumbnail&width=480");
     expect(response.res.statusCode).toBe(200);
     expect(response.headers).toMatchObject({ "Content-Type": mimeType });
     const chunks: Buffer[] = [];
@@ -444,7 +444,7 @@ it("serves a bounded inbound photo preview without replacing its original", asyn
     await fs.utimes(photoPath, modified, modified);
     const source = "media://inbound/photo.png";
     const read = (query = "variant=thumbnail", method: "GET" | "HEAD" = "GET") =>
-      readMedia(source, `token=test-token&${query}`, { method });
+      readMedia(source, query, { ...authenticated, method });
     const preview = await read();
     expect(preview.res.statusCode).toBe(200);
     const body = preview.body;
@@ -527,7 +527,7 @@ it("serves fresh media after an in-place rewrite preserves size and mtime", asyn
 it("returns 202 while assistant playback media is preparing", async () => {
   resolvePlaybackTranscodeMock.mockResolvedValueOnce({ kind: "preparing" });
   const filePath = await createMediaFile("voice.caf", Buffer.from("caff-original"));
-  const reply = await readMedia(filePath, "playback=1&token=test-token");
+  const reply = await readMedia(filePath, "playback=1");
 
   expectStatus(reply, 202);
   expect(responseJson(reply.end)).toEqual({ status: "preparing" });
@@ -572,7 +572,7 @@ it("fully reads the served assistant media MIME prefix after a short read", asyn
 it("reports assistant media metadata when the process clock is outside the Date range", async () => {
   using _ = vi.spyOn(Date, "now").mockReturnValue(8_640_000_000_000_001);
   const filePath = await createMediaFile();
-  const reply = await readMedia(filePath, "meta=1&token=test-token");
+  const reply = await readMedia(filePath, "meta=1");
   expectStatus(reply);
   const payload = responseJson(reply.end);
   expect(payload).toMatchObject({ available: true });
@@ -581,7 +581,7 @@ it("reports assistant media metadata when the process clock is outside the Date 
 });
 
 it("reports assistant local media availability failures with a reason", async () => {
-  const reply = await readMedia("/Users/test/Documents/private.pdf", "meta=1&token=test-token");
+  const reply = await readMedia("/Users/test/Documents/private.pdf", "meta=1");
   expectStatus(reply);
   expect(responseJson(reply.end)).toEqual({
     available: false,
@@ -598,9 +598,8 @@ it("accepts shared-gateway issuer tagged device tokens on assistant media reques
   expect(typeof issuerGeneration).toBe("string");
   await withPairedOperatorDeviceToken(async (operatorToken) => {
     const filePath = await createMediaFile();
-    const reply = await readMedia(filePath, `token=${encodeURIComponent(operatorToken)}`, {
-      auth,
-    });
+    const headers = { authorization: `Bearer ${operatorToken}` };
+    const reply = await readMedia(filePath, "", { auth, headers });
     expectStatus(reply);
   }, issuerGeneration);
 });

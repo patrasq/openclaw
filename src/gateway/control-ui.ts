@@ -184,7 +184,6 @@ export async function handleControlUiAssistantMediaRequest(
         req,
         res,
         cfg: opts?.cfg ?? opts?.config,
-        allowQueryToken: !explicitAllow,
         requiredOperatorMethod: messageId ? "chat.message.get" : "assistant.media.get",
       })
     : undefined;
